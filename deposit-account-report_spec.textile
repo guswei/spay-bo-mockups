@@ -1,0 +1,70 @@
+h1. Spay BO — Deposit by Account (Confirmed) 報表｜RD 簡易 Spec
+
+p. *Mockup（可開「顯示 RD 開發註記」）*："https://guswei.github.io/spay-bo-mockups/deposit-account-report_mockup.html":https://guswei.github.io/spay-bo-mockups/deposit-account-report_mockup.html
+
+h2. 名詞白話表
+
+|_. 詞 |_. 白話 |
+| Prefix | 一個商戶／品牌的代號（例：OLEVN）。每張收款帳戶、每個操作帳號都屬於某個 Prefix。 |
+| 收款帳戶 | 用來收玩家存款的銀行帳戶（有銀行代碼、戶名、帳號）。 |
+| Confirmed（已確認／已上分） | 錢確定收到、已入帳。兩種來源都算：Flow A＝系統比對銀行交易紀錄自動上分（@MATCHED@）／Flow B＝持卡人在 CH App 內確認（@CONFIRM@/@CONFIRMED@）。 |
+| 確認入帳時間 | 那筆存款「被確認上分」的時間（對應現有 @updateTime@）。本報表用這個時間篩，不是用建單時間。 |
+| 4-tier 權限 | 四層帳號權限。最高層（L0／超管）能看所有 Prefix；其他帳號只能看自己 Prefix。 |
+
+h2. 這份報表在幹嘛（一句話）
+
+p. 選一個 *Prefix* 和一段 *日期區間*，看這段期間內*每個收款帳戶各收了多少錢、幾筆*（只算已確認的存款），並能點開看每一筆。
+
+h2. 畫面：Deposit by Account (Confirmed)
+
+p. *這頁在幹嘛*：依 Prefix + 確認時間區間，把已確認的存款依「收款帳戶」加總。
+
+p. *能做什麼*：
+
+# 選 Prefix、From、To，按 *Search* 查詢。
+# 看每個收款帳戶一列：Bank Code、Receive Account Name、Receive account no.、Total Amount、Total Count of transaction，最底下一列是合計。
+# 點任一列 → 同頁往下展開該帳戶的*逐筆明細*（每頁 10 筆，可翻頁）。
+# 按 *Export CSV* 匯出目前查詢結果。
+
+p. *重點規則*：
+
+* *時間軸*：From/To 篩的是「確認入帳時間」（@updateTime@ / @confirmed_at@），*不是建單時間 @orderTime@*。含端點，時區 Asia/Bangkok (GMT+7)。
+* *只算 Confirmed*：@status ∈ {MATCHED, CONFIRM, CONFIRMED}@。其餘狀態（@PENDING / ASSIGNED / PENDING_REVIEW / EXPIRED / CANCEL / REJECTED / REJECTED_BY_CARDHOLDER@）不計入金額與筆數。
+* *只算收款（deposit）*：提款不在這份報表。
+* *分組*：依收款帳號（@accountNo@）一列；Bank Code 是該列的屬性。
+* *彙總*：Total Amount = @SUM(amount)@、Total Count = @COUNT(*)@。
+* *排序*：預設 Total Amount 由大到小。
+* *空結果*：顯示 empty state，不顯示合計列。
+* *明細 = 同口徑*：展開的逐筆明細，套用「同一個 Prefix、同一段確認時間區間、同一個 Confirmed 集合」。所以*明細的筆數加總、金額加總，必須等於該列的 Total Count / Total Amount*。
+* *明細欄位*：Confirmed Time（@confirmed_at@）、Order No.（@orderNo@）、Member（@memberAccount@）、Payer Account（@counterAccountNo@）、Matched Txn No.（@matchedTransactionNo@）、Source（Flow A／Flow B）、Amount。
+* *明細分頁*：沿用站內共用 @Pagination.vue@（每頁 10）。
+
+h2. 欄位型別與精度
+
+|_. 欄位 |_. 型別 |_. 說明 |
+| prefix | @enum@ | 必填、單選 |
+| from / to | @DATE@ | 必填，篩確認時間，@from ≤ to@ |
+| bankCode | @enum@ | 收款方銀行代碼（banks 表） |
+| accountName | @VARCHAR@ | 收款帳戶名 |
+| accountNo | @VARCHAR@ | 收款帳號（分組鍵） |
+| Total Amount | @DECIMAL(18,2)@ | @SUM(amount)@，THB，*禁用 float* |
+| Total Count | @INT@ | @COUNT(*)@ |
+| amount（明細） | @DECIMAL(18,2)@ | 逐筆金額，*禁用 float* |
+
+h2. 安全 / 權限基線
+
+* Prefix 範圍依 4-tier：L0／超管可選任一 Prefix；其他帳號只能查自己所屬 Prefix。
+* 越權防護：*前端限制下拉 + 後端強制範圍*。即使有人直接打 API 帶別的 Prefix，後端也要擋下。
+
+h2. 後端相依（RD 開工前要確認）
+
+# *確認時間欄位*：時間軸與明細的「確認入帳時間」採用現有 deposit order 的 @updateTime@（狀態轉為 confirmed 當下）。RD 須確認此欄即為入帳確認時間。
+# *收款方三欄填值*：Bank Code / Receive Account Name / Receive account no. 取自 deposit order 的 @bankCode@ / @accountName@ / @accountNo@（收款方）。RD 須確認所有 confirmed 單上這三欄填值正確且一致。
+# 報表所需欄位都已存在於現有 deposit order，本案*無 schema 變更*，為唯讀彙總查詢。
+
+h2. 範圍外（本案不做）
+
+* 提款／出款方向。
+* 修改既有 Deposit List、Transaction Records。
+* 本報表為獨立新頁，不以 ChannelDepositReport 為基礎、也不併入該頁。
+* 不依 Flow A／Flow B 在彙總表拆欄（彙總只給一個 Total；來源僅在明細呈現）。
