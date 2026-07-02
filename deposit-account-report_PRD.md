@@ -25,7 +25,7 @@
 
 - 查詢列：Prefix（下拉）、From、To（日期）、Search、Export CSV；上方標明「依確認入帳時間（confirmed/settlement time）· GMT+7」篩選。
 - 彙總表：每個收款帳戶一列，欄位 Bank Code｜Receive Account Name｜Receive account no.｜Total Amount｜Total Count of transaction；預設依 Total Amount 由大到小；底部合計列（帳戶數、金額與筆數總和）。
-- 明細：點帳戶列向下 inline 展開逐筆表（Confirmed Time｜Order No.｜Member｜Payer Account｜Matched Txn No.｜Source｜Amount），每頁 10 筆、可翻頁。
+- 明細：點帳戶列向下 inline 展開逐筆表（Confirmed Time｜Order No.｜Deposit Account Name｜Payer Account｜Matched Txn No.｜Source｜Amount），每頁 10 筆、可翻頁。
 - 空結果：顯示 empty state，不顯示合計列。
 
 **BO 欄位表**：
@@ -42,7 +42,7 @@
 | (明細) confirmed_at | `DATETIME` | — | 該筆確認入帳時間（對應現有 `updateTime`） |
 | (明細) orderNo | `VARCHAR` | — | 存款單號 |
 | (明細) amount | `DECIMAL(18,2)` | — | 該筆金額 |
-| (明細) memberAccount | `VARCHAR` | — | 會員帳號 |
+| (明細) depositAccountName | `VARCHAR` | — | 存款方戶名（付款方帳戶戶名，Deposit List 既有欄位） |
 | (明細) counterAccountNo | `VARCHAR` | — | 付款方帳號 |
 | (明細) matchedTransactionNo | `VARCHAR` | — | 比對到的交易序號 |
 | (明細) source | `enum` | — | 確認來源：Flow A 自動比對（`MATCHED`）／Flow B CH App 確認（`CONFIRM`/`CONFIRMED`） |

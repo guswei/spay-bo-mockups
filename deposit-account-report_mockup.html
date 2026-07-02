@@ -151,7 +151,7 @@
           <b>RD 註記 — 明細 drill-down(inline 同頁展開)</b><br>
           • 點任一帳戶列 → 下方 inline 展開該帳戶在<b>同一篩選條件</b>下的每筆 confirmed 存款。<br>
           • <b>口徑必須與彙總完全一致</b>(同 Confirmed 集合、同確認時間區間、同 prefix)——明細筆數/金額加總必等於該列 Total Count/Amount，否則視為 bug。<br>
-          • 明細欄位：<code>confirmed_at</code> · <code>orderNo</code> · <code>amount</code> · <code>memberAccount</code> · 付款方 <code>counterAccountNo</code> · <code>matchedTransactionNo</code> · 來源(Flow A=自動比對 <code>MATCHED</code> / Flow B=CH App 確認 <code>CONFIRM(ED)</code>)。<br>
+          • 明細欄位：<code>confirmed_at</code> · <code>orderNo</code> · <code>amount</code> · 存款方戶名 <code>depositAccountName</code>(＝Deposit List 既有的存款帳戶戶名，與付款方帳號成對) · 付款方 <code>counterAccountNo</code> · <code>matchedTransactionNo</code> · 來源(Flow A=自動比對 <code>MATCHED</code> / Flow B=CH App 確認 <code>CONFIRM(ED)</code>)。<br>
           • 明細分頁沿用站內共用 <code>Pagination.vue</code>(每頁 10，同其它報表)；分頁不影響彙總數字。
         </div>
       </div>
@@ -161,6 +161,8 @@
 <script>
 // ---- DEMO 合成資料 generator(僅 mockup 展示用，上線改打後端彙總 API)。
 // 每帳戶的彙總(Total Amount/Count)由 details 推算，故加總必然 === 彙總(§18)。----
+const PAYER_NAMES = ['Somsak Prasert','Kanya Thongdee','Niran Chaiyo','Malee Srisuk','Prayut Wongsa','Siriporn Kaewta','Thanet Boonmee','Duangjai Rattana','Kittipong Suksan','Orawan Phanit'];
+
 function mkAcct(bankCode, accountName, accountNo, n, base){
   const details = [];
   for(let i=0;i<n;i++){
@@ -172,7 +174,7 @@ function mkAcct(bankCode, accountName, accountNo, n, base){
       t: `2026-06-${day} ${hh}:${mm}`,
       no: `ORD-202606-${String(base*100 + i).padStart(4,'0')}`,
       amt,
-      member: `user${100 + ((i*13 + base) % 800)}`,
+      depositAccountName: PAYER_NAMES[(i*13 + base) % PAYER_NAMES.length],
       counter: `${100 + ((i*7 + base) % 800)}-${(i + base) % 9}-${10000 + ((i*37 + base*11) % 89999)}-${i % 9}`,
       txn: `TXN-${50000 + base*100 + i}`,
       src: ((i + base) % 3 === 0) ? 'B' : 'A',
@@ -215,7 +217,7 @@ function detailRow(d, idx){
       <span class="rd" style="color:var(--rd)">（RD：明細口徑＝同 Confirmed 集合＋同確認時間區間，加總必等於上方該列）</span></div>
     <table class="detail">
       <thead><tr>
-        <th>Confirmed Time</th><th>Order No.</th><th>Member</th><th>Payer Account</th>
+        <th>Confirmed Time</th><th>Order No.</th><th>Deposit Account Name</th><th>Payer Account</th>
         <th>Matched Txn No.</th><th>Source</th><th style="text-align:right">Amount</th>
       </tr></thead>
       <tbody id="det-${idx}"></tbody>
@@ -233,7 +235,7 @@ function renderDetailBody(idx){
   const slice = d.details.slice(start, start + PAGE);
   document.getElementById('det-' + idx).innerHTML = slice.map(x=>`<tr>
     <td>${x.t}</td><td style="font-family:ui-monospace,monospace">${x.no}</td>
-    <td>${x.member}</td><td class="acctno">${x.counter}</td>
+    <td>${x.depositAccountName}</td><td class="acctno">${x.counter}</td>
     <td style="font-family:ui-monospace,monospace">${x.txn}</td>
     <td><span class="src ${x.src}">${x.src==='A'?'Flow A · Matched':'Flow B · CH App'}</span></td>
     <td style="text-align:right;font-variant-numeric:tabular-nums">฿${fmt(x.amt)}</td>

@@ -41,7 +41,7 @@
 - **排序**：預設 Total Amount 由大到小。
 - **空結果**：顯示 empty state，不顯示合計列。
 - **明細 = 同口徑**：展開的逐筆明細，套用「同一個 Prefix、同一段確認時間區間、同一個 Confirmed 集合」。所以**明細的筆數加總、金額加總，必須等於該列的 Total Count / Total Amount**。
-- **明細欄位**：Confirmed Time（`confirmed_at`）、Order No.（`orderNo`）、Member（`memberAccount`）、Payer Account（`counterAccountNo`）、Matched Txn No.（`matchedTransactionNo`）、Source（Flow A／Flow B）、Amount。
+- **明細欄位**：Confirmed Time（`confirmed_at`）、Order No.（`orderNo`）、Deposit Account Name（`depositAccountName`，存款方戶名＝Deposit List 既有的存款帳戶戶名）、Payer Account（`counterAccountNo`）、Matched Txn No.（`matchedTransactionNo`）、Source（Flow A／Flow B）、Amount。
 - **明細分頁**：沿用站內共用 `Pagination.vue`（每頁 10）。
 
 ---
